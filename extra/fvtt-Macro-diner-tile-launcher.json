@@ -1,0 +1,7 @@
+{
+  "name": "Diner™ Tile Launcher",
+  "type": "script",
+  "scope": "global",
+  "img": "systems/cyberpunk-red-core/icons/compendium/cargo-containers-and-cube-hotels/koff-popper.svg",
+  "command": "return game.dinerManager.openTile({\n  args: typeof args === \"undefined\" ? null : args,\n  tile: typeof tile === \"undefined\" ? null : tile,\n  token: typeof token === \"undefined\" ? null : token,\n  actor: typeof actor === \"undefined\" ? null : actor\n});"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "Diner™ Manager",
+  "type": "script",
+  "scope": "global",
+  "img": "systems/cyberpunk-red-core/icons/compendium/cargo-containers-and-cube-hotels/koff-popper.svg",
+  "command": "game.dinerManager.openManager();"
+}

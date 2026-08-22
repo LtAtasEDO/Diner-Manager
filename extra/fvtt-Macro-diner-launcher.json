@@ -1,0 +1,7 @@
+{
+  "name": "Diner™ Launcher",
+  "type": "script",
+  "scope": "global",
+  "img": "systems/cyberpunk-red-core/icons/compendium/cargo-containers-and-cube-hotels/koff-popper.svg",
+  "command": "let dinerId = null;\ntry {\n  if (Array.isArray(args) && args[0]?.id) dinerId = String(args[0].id);\n  else if (Array.isArray(args) && typeof args[0] === \"string\") dinerId = String(args[0]).replace(/^id\\s*=\\s*/i, \"\");\n  else if (!Array.isArray(args) && args?.id) dinerId = String(args.id);\n} catch {}\nif (!dinerId) return ui.notifications.warn(\"Diner ID missing. Use id=YOUR-DINER-ID.\");\ngame.dinerManager.open(dinerId.replace(/[<>\"'()\\[\\]\\s]/g, \"\"));"
+}
