@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.4
+- Added the missing `relationships.systems` manifest requirement for Cyberpunk RED (`cyberpunk-red-core`, minimum 0.92.1, verified 0.92.4) so the module no longer offers itself for install on unrelated systems.
+- No runtime behavior changes.
+
 ## 1.1.3
 - Added a bound-Tile roster to each Diner showing Tile name, Scene name, and UUID.
 - Added per-Tile unlink controls plus **Unbind All** for mobile vendors spanning multiple scenes.
