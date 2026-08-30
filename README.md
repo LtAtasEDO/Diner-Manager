@@ -1,6 +1,6 @@
-# Diner-Manager v1.1.3
+# Diner-Manager v1.1.4
 A persistent diner / restaurant / bar / food-truck / street-vendor module for Cyberpunk Red System on Foundry VTT.
-## v1.1.3 highlights
+## v1.1.4 highlights
 
 - Restyled Manager, editor, options, and player menu to share the dark neon visual language used by Bodega™, Vendit™, and CHOOM TRADE.
 - Keeps the existing world-level era switch:
