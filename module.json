@@ -2,7 +2,8 @@
   "id": "diner-manager",
   "title": "Diner™ Manager",
   "description": "Persistent, lifestyle-aware diners, restaurants, bars, food trucks, and street vendors for Cyberpunk RED, with Tile binding and CPR menu Item creation.",
-  "version": "1.1.3",
+  "url": "https://github.com/LtAtasEDO/Diner-Manager",
+  "version": "1.1.4",
   "authors": [
     {
       "name": "Lt Atlas"
@@ -13,6 +14,18 @@
     "verified": "12",
     "maximum": "12"
   },
+  "relationships": {
+    "systems": [
+      {
+        "id": "cyberpunk-red-core",
+        "type": "system",
+        "compatibility": {
+          "minimum": "0.92.1",
+          "verified": "0.92.4"
+        }
+      }
+    ]
+  },
   "esmodules": [
     "scripts/diner-manager.js"
   ],
@@ -20,6 +33,6 @@
     "styles/diner-manager.css"
   ],
   "socket": true,
-  "manifest": "",
-  "download": ""
+  "manifest": "https://github.com/LtAtasEDO/Diner-Manager/releases/latest/download/module.json",
+  "download": "https://github.com/LtAtasEDO/Diner-Manager/releases/download/1.1.4/module.zip"
 }
