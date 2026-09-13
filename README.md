@@ -173,7 +173,8 @@ Accepted formats:
 
 Table results should resolve to Item documents. Text results are also searched as Item names.
 
-Legal / Homebrew Content Policy
+## Legal / Homebrew Content Policy
+
 This is unofficial homebrew content for use with Cyberpunk RED.
 
 This project is provided free of charge under the R. Talsorian Games Homebrew Content Policy.
