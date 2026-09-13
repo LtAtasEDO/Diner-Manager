@@ -1,4 +1,4 @@
-# Diner-Manager v1.1.4
+# Diner-Manager v1.1.4 for use with Cyberpunk RED
 A persistent diner / restaurant / bar / food-truck / street-vendor module for Cyberpunk Red System on Foundry VTT.
 ## v1.1.4 highlights
 
@@ -172,3 +172,12 @@ Accepted formats:
 - `pack.collection::Table Name`
 
 Table results should resolve to Item documents. Text results are also searched as Item names.
+
+Legal / Homebrew Content Policy
+This is unofficial homebrew content for use with Cyberpunk RED.
+
+This project is provided free of charge under the R. Talsorian Games Homebrew Content Policy.
+
+Diner Manager for use with Cyberpunk RED is unofficial content provided under the Homebrew Content Policy of R. Talsorian Games and is not approved or endorsed by RTG. This content references materials that are the property of R. Talsorian Games and its licensees.
+
+Cyberpunk RED and related properties are the property of R. Talsorian Games and their respective licensees.
