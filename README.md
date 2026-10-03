@@ -1,8 +1,28 @@
-# Diner-Manager v1.1.4 for use with Cyberpunk RED
+# Diner-Manager v1.2.0 for use with Cyberpunk RED
 A persistent diner / restaurant / bar / food-truck / street-vendor module for Cyberpunk Red System on Foundry VTT.
-## v1.1.4 highlights
+## v1.2.0 — stable
 
-- Restyled Manager, editor, options, and player menu to share the dark neon visual language used by Bodega™, Vendit™, and CHOOM TRADE.
+- Click a menu Item's **name or image** to open its read-only description, matching Bodega 2.4.0 and Vendit 1.3.0. The Order/Buy button remains separate.
+- The active GM resolves the current menu Item for players. Previewing does not charge wealth, deliver an Item, consume allowance, or change source permissions. Without a GM, only source Items the player can observe are previewable.
+- Descriptions keep ordinary text/table formatting; secret/hidden blocks, scripts, active controls, and executable document links are stripped.
+- Lifestyle detection matches Holophone Messenger 1.9.0: non-empty Gear marked carried, equipped, owned, or with no state; custom food packages; and Datapool/custom housing.
+- Monthly cost priority: `###eb/month` in the Item name, then description, then market price. Standard food tiers retain their usual monthly fallback.
+- Custom food Items require **lifestyle package**, **food lifestyle**, or **meal lifestyle** in the name/description. Their coverage rank follows the standard monthly ladder: Kibble below 300eb, Generic Prepak at 300eb, Good Prepak at 600eb, Fresh Food at 1500eb.
+- Custom housing uses Holophone's housing-name terms plus a housing marker, monthly amount, or market price. Food and housing remain separate; only the selected highest food tier and highest housing cost count.
+- GM Actor and Item food-tier overrides, existing menus, serving locks, and covered-order ledgers remain supported.
+
+**Recommended optional modules:** Simple Calendar minimum **2.4.17**, verified **2.4.18**, maximum **2.4.18**; Monk's Active Tile Triggers minimum **12.01**, verified **12.02**, maximum **12.02**. These reflect our established v12 project compatibility bounds.
+
+### Regression checklist
+
+1. Click a name and image as GM and player, including a menu Item from a compendium or world folder the player cannot normally open. Confirm description formatting and that no order or sheet edit occurs.
+2. Inspect an owned custom food package and a Datapool housing Item. Check the displayed label, food coverage, and food + housing total against their name/description/market prices.
+3. Confirm ordinary paid orders, covered orders, daily allowance, and consume-to-zero serving release still work.
+4. Confirm the preview follows the 2077 Cyan / 2045 Red theme, GM overrides still work, and existing Tile launchers open the menu.
+
+## Previous v1.1.4 features
+
+- Restyled Manager, editor, options, and player menu to share the dark neon visual language used by Bodega, Vendit, and CHOOM TRADE.
 - Keeps the existing world-level era switch:
   - **2077 Cyan** — `#00FFF7`
   - **2045 Red** — `#E64539`
@@ -30,7 +50,7 @@ A persistent diner / restaurant / bar / food-truck / street-vendor module for Cy
   - Total monthly lifestyle budget.
   - Always pay.
   - Always included.
-- Actor food lifestyle is detected from active embedded Gear Items named Kibble, Generic Prepak, Good Prepak, or Fresh Food.
+- Actor food lifestyle is detected from active embedded Gear Items for Kibble, Generic Prepak, Good Prepak, Fresh Food, or custom food lifestyle packages.
 - Housing is detected separately and included only for the total-monthly-budget rule.
 - Orders can add the Item to Actor inventory or use chat-only delivery.
 - The active GM authoritatively processes orders, wealth changes, meal allowance, and serving locks.
