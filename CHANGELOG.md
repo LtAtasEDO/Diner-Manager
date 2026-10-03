@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0
+- Added clickable menu Item names/images and GM-mediated, read-only descriptions; stripped secrets, hidden blocks, scripts, controls, and executable document links.
+- Matched Holophone 1.9.0 lifestyle detection for custom food packages, Datapool/custom housing, owned/missing-state Gear, positive quantities, and monthly amounts in names/descriptions.
+- Preserved existing Diner food-tier overrides, highest-match selection, and separate food/housing coverage. Exposed `foodMonthly` in the lifestyle inspector API.
+- Declared optional v12 Simple Calendar and Monk's Active Tile Triggers compatibility bounds.
+- No database or meal-ledger migration required.
+
 ## 1.1.4
 - Added the missing `relationships.systems` manifest requirement for Cyberpunk RED (`cyberpunk-red-core`, minimum 0.92.1, verified 0.92.4) so the module no longer offers itself for install on unrelated systems.
 - No runtime behavior changes.
