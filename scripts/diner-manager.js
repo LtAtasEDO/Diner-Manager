@@ -1,7 +1,7 @@
 const MODULE_ID = "diner-manager";
 const SETTING_DB = "db";
 const SETTING_MEAL_LEDGER = "mealLedger";
-const MODULE_VERSION = "1.1.4";
+const MODULE_VERSION = "1.2.0";
 const DB_VERSION = 5;
 const MEAL_LEDGER_VERSION = 1;
 const THEME_2077 = "#00FFF7";
@@ -65,6 +65,28 @@ const HOUSING_PATTERNS = [
   "beaverville mcmansion",
   "luxury penthouse"
 ];
+
+const CUSTOM_HOUSING_TERMS = [
+  "apartment",
+  "conapt",
+  "flat",
+  "hotel",
+  "hostel",
+  "motel",
+  "penthouse",
+  "house",
+  "mansion",
+  "residence",
+  "housing",
+  "lodging",
+  "street",
+  "vehicle",
+  "container",
+  "studio",
+  "loft"
+];
+
+const pendingPreviews = new Map();
 
 const processedRequests = new Set();
 const pendingRequests = new Map();
@@ -272,28 +294,80 @@ function parseMonthlyAmount(name = "") {
   return match ? Math.max(0, Number(match[1]) || 0) : null;
 }
 
-function isHousingItem(item) {
-  const name = normalize(item?.name);
-  return HOUSING_PATTERNS.some((pattern) => name.includes(normalize(pattern)));
+function itemDescription(item) {
+  return String(item?.system?.description?.value ?? item?.system?.description ?? "");
+}
+
+function getItemAmount(item) {
+  const value = item?.system?.amount;
+  if (value === undefined || value === null || value === "") return 1;
+  return Math.max(0, Number(value) || 0);
+}
+
+function isActiveLifestyleGear(item) {
+  if (normalize(item?.type) !== "gear" || getItemAmount(item) <= 0) return false;
+  const state = normalize(item?.system?.equipped ?? "");
+  return !state || state === "equipped" || state === "carried" || state === "owned";
+}
+
+function itemMonthlyAmount(item) {
+  return parseMonthlyAmount(item?.name)
+    ?? parseMonthlyAmount(itemDescription(item))
+    ?? getItemMarketValue(item);
+}
+
+function cleanLifestyleLabel(value = "") {
+  return String(value).replace(/^[^\p{L}\p{N}]+/u, "").trim()
+    .replace(/\s*[-–—]?\s*\d[\d,]*\s*eb\s*\/\s*month.*$/i, "")
+    .trim() || "Custom Lifestyle";
+}
+
+function customFoodRank(amount) {
+  const monthly = Math.max(0, Number(amount) || 0);
+  return FOOD_TIERS.reduce((rank, tier) => monthly >= tier.monthly ? Math.max(rank, tier.rank) : rank, 1);
+}
+
+function isCustomFoodLifestyle(item) {
+  const text = normalize(`${item?.name ?? ""} ${itemDescription(item)}`);
+  return text.includes("lifestyle package")
+    || text.includes("food lifestyle")
+    || text.includes("meal lifestyle");
 }
 
 function itemFoodTier(item) {
   const explicit = item?.flags?.[MODULE_ID]?.foodTier;
   if (explicit && tierById(explicit).id === explicit) return tierById(explicit);
-
   const name = normalize(item?.name);
   let best = FOOD_TIERS[0];
   for (const tier of FOOD_TIERS) {
     if (tier.rank <= best.rank) continue;
     if (tier.aliases.some((alias) => name.includes(normalize(alias)))) best = tier;
   }
-  return best;
+  if (best.rank > 0 || !isCustomFoodLifestyle(item)) return best;
+  const monthly = itemMonthlyAmount(item);
+  return {
+    id: "custom",
+    label: cleanLifestyleLabel(item?.name),
+    rank: customFoodRank(monthly),
+    monthly,
+    aliases: []
+  };
 }
 
-function isActiveLifestyleGear(item) {
-  if (String(item?.type ?? "").toLowerCase() !== "gear") return false;
-  const state = normalize(item?.system?.equipped ?? "");
-  return state === "equipped" || state === "carried";
+function isHousingItem(item) {
+  const name = normalize(item?.name);
+  if (HOUSING_PATTERNS.some((pattern) => name.includes(normalize(pattern)))) return true;
+
+  const description = normalize(itemDescription(item));
+  const hasHousingTerm = CUSTOM_HOUSING_TERMS.some((term) => name.includes(normalize(term)));
+  const hasLifestyleMarker = description.includes("housing lifestyle")
+    || description.includes("living space")
+    || description.includes("sleeps ")
+    || normalize(item?.system?.usage) === "always";
+  const hasMonthlyValue = parseMonthlyAmount(item?.name) !== null
+    || parseMonthlyAmount(itemDescription(item)) !== null
+    || getItemMarketValue(item) > 0;
+  return hasHousingTerm && (hasLifestyleMarker || hasMonthlyValue);
 }
 
 function inspectLifestyle(actor) {
@@ -302,6 +376,7 @@ function inspectLifestyle(actor) {
       foodTier: FOOD_TIERS[0],
       foodSource: "No actor",
       housingName: "None detected",
+      foodMonthly: 0,
       housingMonthly: 0,
       totalMonthly: 0,
       monthlyItems: [],
@@ -318,7 +393,7 @@ function inspectLifestyle(actor) {
 
     const detectedFood = itemFoodTier(item);
     const housing = isHousingItem(item);
-    const parsedMonthly = parseMonthlyAmount(item.name);
+    const parsedMonthly = parseMonthlyAmount(item.name) ?? parseMonthlyAmount(itemDescription(item));
 
     if (detectedFood.rank > 0) {
       const marketValue = getItemMarketValue(item);
@@ -332,7 +407,7 @@ function inspectLifestyle(actor) {
     if (housing) {
       housingMatches.push({
         item,
-        amount: parsedMonthly ?? getItemMarketValue(item)
+        amount: itemMonthlyAmount(item)
       });
     }
   }
@@ -360,6 +435,7 @@ function inspectLifestyle(actor) {
     foodTier,
     foodSource,
     housingName,
+    foodMonthly,
     housingMonthly,
     totalMonthly: foodMonthly + housingMonthly,
     monthlyItems,
@@ -1640,7 +1716,7 @@ async function openLifestyleOverride(actor = getActorFromContext()) {
       <label>Food lifestyle override
         <select class="diner-tier-override">${foodTierOptions(current, true)}</select>
       </label>
-      <div class="diner-muted">Automatic detection reads active Gear Items marked carried or equipped. The stale actor-level lifestyle block is ignored.</div>
+      <div class="diner-muted">Automatic detection reads non-empty Gear Items marked carried, equipped, owned, or without a state. Custom food packages and housing are supported; monthly amounts are read from the name, description, or market price. The stale actor-level lifestyle block is ignored.</div>
       ${lifestyle.warnings?.length ? `<div class="diner-card diner-warning">${lifestyle.warnings.map((warning) => `<div><i class="fas fa-exclamation-triangle"></i> ${esc(warning)}</div>`).join("")}</div>` : ""}
     </div>`;
 
@@ -2339,11 +2415,103 @@ async function openDinerEditor(dinerId, { parentRefresh = null, sharedDb = null 
   return dialog;
 }
 
+function sanitizePreviewDescription(value){
+  const template = document.createElement("template");
+  template.innerHTML = String(value || "");
+  const allowed = new Set(["P","BR","DIV","SPAN","SECTION","B","STRONG","I","EM","U","S","DEL","SUB","SUP","UL","OL","LI","H1","H2","H3","H4","H5","H6","BLOCKQUOTE","PRE","CODE","HR","TABLE","THEAD","TBODY","TFOOT","TR","TH","TD"]);
+  const blocked = new Set(["SCRIPT","STYLE","IFRAME","OBJECT","EMBED","FORM","INPUT","BUTTON","SELECT","TEXTAREA","SVG","MATH","TEMPLATE"]);
+  const copy = (source, target) => {
+    for (const node of source.childNodes){
+      if (node.nodeType === 3){
+        // Keep human labels without sending linked UUIDs to the preview client.
+        const text = node.textContent.replace(/@(UUID|Item|Actor|JournalEntry|Macro|Embed)\[[^\]]*\](?:\{([^}]*)\})?/gi, (_, type, label) => label || "[Linked content]");
+        target.appendChild(document.createTextNode(text));
+      } else if (node.nodeType === 1){
+        if (blocked.has(node.tagName) || node.classList.contains("secret") || node.hidden) continue;
+        if (!allowed.has(node.tagName)){ copy(node, target); continue; }
+        const clean = document.createElement(node.tagName.toLowerCase());
+        for (const attr of ["colspan","rowspan"]){
+          if (["TD","TH"].includes(node.tagName) && node.hasAttribute(attr)) clean.setAttribute(attr, String(Math.min(50, Math.max(1, Number(node.getAttribute(attr)) || 1))));
+        }
+        copy(node, clean);
+        target.appendChild(clean);
+      }
+    }
+  };
+  const output = document.createElement("div");
+  copy(template.content, output);
+  return output.innerHTML;
+}
+function previewImagePath(value){
+  const path = String(value || "").trim();
+  return path && (/^https?:\/\//i.test(path) || !/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(path)) ? path : "icons/svg/box.svg";
+}
 function categoryRuleLabel(category) {
   if (category.ruleType === "alwaysIncluded") return "Included for everyone";
   if (category.ruleType === "alwaysPay") return "Always paid separately";
   if (category.ruleType === "monthlyBudget") return `Included at ${Number(category.minMonthly) || 0}+ eb/month total lifestyle`;
   return `Included with ${tierById(category.requiredTier).label} or better`;
+}
+
+async function resolveMenuPreview(payload) {
+  const user = game.users.get(payload.userId);
+  if (!user) throw new Error("The requesting user is no longer available.");
+  const db = await loadDB();
+  const diner = db.diners[payload.dinerId];
+  if (!diner) throw new Error("Diner not found.");
+  const actor = await fromUuid(payload.actorUuid);
+  if (!user.isGM && (!actor || !actor.testUserPermission?.(user, "OWNER"))) throw new Error("Choose a customer character you control.");
+  if (!user.isGM && diner.sceneOnly && diner.sceneId && diner.sceneId !== user.viewedScene) throw new Error("This Diner is not available on your scene.");
+  const entry = (diner.items ?? []).find(item => item.id === payload.itemId);
+  if (!entry) throw new Error("That menu item changed. Re-open the Diner.");
+  const source = await resolveItem(entry.uuid);
+  if (!source || source.documentName !== "Item") throw new Error("The source Item is no longer available.");
+  if (!game.user.isGM && !source.testUserPermission?.(game.user, "OBSERVER")) throw new Error("An active GM is needed to preview this Item.");
+  return {
+    name: String(entry.name || source.name || "Item"),
+    img: previewImagePath(entry.img || source.img),
+    kind: String(source.type || "Item"),
+    marketPrice: getItemMarketValue(source),
+    offeredPrice: Math.max(0, Number(entry.price) || 0),
+    description: sanitizePreviewDescription(itemDescription(source))
+  };
+}
+
+function showMenuPreview(preview, accent) {
+  return openDialog({
+    title: "Diner™ — Item Preview",
+    content: `<div class="diner-shell diner-item-preview">
+      <div class="diner-card diner-preview-head"><img src="${esc(previewImagePath(preview.img))}" alt=""><div><div class="diner-section-title">${esc(preview.name)}</div><div class="diner-muted">${esc(preview.kind)} · Market value ${esc(preview.marketPrice)} eb · Menu price ${esc(preview.offeredPrice)} eb</div><div class="diner-muted">Read-only item preview · Lifestyle coverage is shown on the menu</div></div></div>
+      <div class="diner-card diner-preview-description">${sanitizePreviewDescription(preview.description) || '<p class="diner-muted">No description provided.</p>'}</div>
+    </div>`,
+    buttons: { close: { label: "Close" } },
+    render: html => setDialogAccent(html[0].closest(".app"), accent)
+  }, { width: 720 });
+}
+
+function handlePreviewResponse(message) {
+  if (message.userId !== game.user.id) return;
+  const pending = pendingPreviews.get(message.requestId);
+  if (!pending) return;
+  pendingPreviews.delete(message.requestId);
+  clearTimeout(pending.timeout);
+  if (message.ok) pending.resolve(message.preview);
+  else pending.reject(new Error(message.error || "Item preview unavailable."));
+}
+
+async function openMenuPreview(dinerId, itemId, actor, accent) {
+  const requestId = `${Date.now()}-${makeId()}`;
+  const payload = { op: "preview", requestId, userId: game.user.id, dinerId, itemId, actorUuid: actor.uuid };
+  if (game.user.isGM || !game.users.activeGM) return showMenuPreview(await resolveMenuPreview(payload), accent);
+  const preview = await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      pendingPreviews.delete(requestId);
+      reject(new Error("The GM did not respond to the item preview. Try again."));
+    }, 10000);
+    pendingPreviews.set(requestId, { resolve, reject, timeout });
+    game.socket.emit(SOCKET_NAME, payload);
+  });
+  return showMenuPreview(preview, accent);
 }
 
 function renderPlayerMenu(db, diner, actor, lifestyle) {
@@ -2384,9 +2552,9 @@ function renderPlayerMenu(db, diner, actor, lifestyle) {
       }
       return `
         <div class="diner-menu-item" data-menu-item="${esc(item.id)}">
-          <img class="diner-thumb" src="${esc(item.img || "icons/svg/box.svg")}">
+          <button type="button" class="diner-preview-image" data-menu-preview="${esc(item.id)}" aria-label="${esc(`View ${item.name} description`)}"><img class="diner-thumb" src="${esc(item.img || "icons/svg/box.svg")}" alt=""></button>
           <div style="min-width:0">
-            <div class="diner-menu-name" title="${esc(item.name)}">${esc(item.name)}</div>
+            <button type="button" class="diner-menu-name diner-preview-name" data-menu-preview="${esc(item.id)}" title="View description">${esc(item.name)}</button>
             <div class="${state.covered ? "diner-price-covered" : "diner-price-paid"}">${priceText}</div>
           </div>
           <button type="button" class="diner-btn" data-order="${esc(item.id)}" ${disabled ? "disabled" : ""}>
@@ -2622,6 +2790,12 @@ async function openDiner(dinerId, { actor = null, preview = false } = {}) {
       setDialogAccent(app, themeAccent(db));
       const root = html[0].querySelector("[data-player-diner]");
       root.addEventListener("click", async (event) => {
+        const previewId = event.target.closest("[data-menu-preview]")?.dataset.menuPreview;
+        if (previewId) {
+          try { await openMenuPreview(diner.id, previewId, actor, themeAccent(db)); }
+          catch (error) { ui.notifications.warn(error.message || "Item preview unavailable."); }
+          return;
+        }
         const itemId = event.target.closest("[data-order]")?.dataset.order;
         if (!itemId) return;
         const button = event.target.closest("[data-order]");
@@ -2689,6 +2863,17 @@ async function ensureWorldMacros() {
 function bindSocket() {
   game.socket.on(SOCKET_NAME, async (message) => {
     if (!message) return;
+    if (message.op === "preview-response") return handlePreviewResponse(message);
+    if (message.op === "preview") {
+      if (!game.user.isGM) return;
+      const activeGM = game.users.activeGM;
+      if (activeGM && activeGM.id !== game.user.id) return;
+      let response;
+      try { response = { ok: true, preview: await resolveMenuPreview(message) }; }
+      catch (error) { response = { ok: false, error: error.message || "Item preview unavailable." }; }
+      game.socket.emit(SOCKET_NAME, { op: "preview-response", requestId: message.requestId, userId: message.userId, ...response });
+      return;
+    }
     if (message.op === "order-response") return handleOrderResponse(message);
     if (message.op === "order") {
       if (!game.user.isGM) return;
