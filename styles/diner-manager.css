@@ -1202,3 +1202,15 @@
     justify-content: flex-end;
   }
 }
+
+/* Read-only menu descriptions; order buttons keep their existing behavior. */
+.diner-preview-image { padding:0 !important; margin:0; width:48px; height:48px; border:0 !important; background:transparent !important; cursor:pointer; }
+.diner-preview-name { display:block; width:auto; max-width:100%; padding:0 !important; margin:0; border:0 !important; background:transparent !important; color:var(--diner-accent) !important; text-align:left; cursor:pointer; }
+.diner-preview-name:hover { color:#FFDD00 !important; text-decoration:underline; }
+.diner-preview-image:focus-visible, .diner-preview-name:focus-visible { outline:2px solid #FFDD00; outline-offset:2px; }
+.diner-preview-head { display:flex; align-items:center; gap:14px; }
+.diner-preview-head img { width:72px; height:72px; object-fit:contain; }
+.diner-preview-description { max-height:55vh; overflow:auto; overflow-wrap:anywhere; }
+.diner-preview-description table { display:block; max-width:100%; overflow:auto; border-collapse:collapse; }
+.diner-preview-description th, .diner-preview-description td { padding:6px; border:1px solid var(--diner-accent); }
+.diner-preview-description pre { white-space:pre-wrap; }
